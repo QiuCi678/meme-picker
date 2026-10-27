@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>聊天热梗抽取器 · 互怼与安慰话术速查</title>
+<style>
+/* SECTION: base */
+:root{
+  --bg1:#fff3e8; --bg2:#e9f3ff; --ink:#1f2430; --ink2:#5b6474;
+  --card:#ffffff; --line:#ece7df; --accent:#ff7a59; --ok:#20a06b;
+  --radius:22px; --shadow:0 18px 40px -22px rgba(31,36,48,.45);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+  color:var(--ink); background:linear-gradient(160deg,var(--bg1) 0%,var(--bg2) 100%);
+  min-height:100vh; -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 18px 48px}
+
+/* SECTION: header */
+.hd{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+.hd h1{font-size:clamp(22px,4.4vw,32px);margin:0;letter-spacing:.5px}
+.hd h1 .tilde{color:var(--accent)}
+.hd p{margin:6px 0 0;color:var(--ink2);font-size:14px}
+.count{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:13px;color:var(--ink2);box-shadow:var(--shadow)}
+.count b{color:var(--ink);font-size:15px}
+
+/* SECTION: tabs */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 14px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:9px 15px;border-radius:999px;
+  background:rgba(255,255,255,.72);border:1px solid var(--line);font-size:14px;color:var(--ink2);
+  transition:transform .15s,box-shadow .15s,background .15s;white-space:nowrap}
+.tab:hover{transform:translateY(-1px)}
+.tab[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:var(--shadow)}
+.tab .dot{width:8px;height:8px;border-radius:50%;background:var(--tc,#ff7a59)}
+.tab .num{font-size:12px;opacity:.7}
+
+/* SECTION: layout */
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+
+/* SECTION: card */
+.stage{position:relative}
+.bubble{position:relative;background:var(--card);border-radius:var(--radius);padding:30px 26px 26px;
+  box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
+.bubble::before{content:"";position:absolute;left:0;top:0;height:6px;width:100%;background:var(--accent)}
+.tagline{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;letter-spacing:.4px;
+  color:var(--ink2);background:#f6f3ee;border-radius:999px;padding:6px 13px;margin-bottom:18px}
+.tagline .em{font-size:14px}
+.say{font-size:clamp(26px,5.4vw,42px);line-height:1.28;font-weight:700;margin:0;word-break:break-word;
+  letter-spacing:.5px}
+.hint{margin:16px 0 0;color:var(--ink2);font-size:14.5px;line-height:1.6}
+.hint::before{content:"怎么用：";color:var(--ink);font-weight:600}
+.pop{animation:pop .34s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;
+  border-radius:14px;font-size:16px;font-weight:600;transition:transform .12s,filter .2s,background .2s}
+.btn:active{transform:scale(.96)}
+.btn-dice{background:var(--ink);color:#fff;flex:1 1 200px}
+.btn-dice:hover{filter:brightness(1.15)}
+.btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink);flex:0 1 auto}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-ghost.on{background:#fff2d9;border-color:#f2b632;color:#8a5d00}
+.kbd{margin-top:14px;font-size:12.5px;color:var(--ink2)}
+.kbd kbd{background:#fff;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;
+  padding:2px 7px;font-family:inherit;font-size:12px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--ink);color:#fff;
+  padding:12px 20px;border-radius:12px;font-size:15px;opacity:0;pointer-events:none;transition:.25s;z-index:40;
+  box-shadow:var(--shadow);max-width:88vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* SECTION: side */
+.side{display:flex;flex-direction:column;gap:16px}
+.panel{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 18px 16px;box-shadow:var(--shadow)}
+.panel h2{margin:0 0 4px;font-size:16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel .sub{margin:0 0 12px;font-size:12.5px;color:var(--ink2)}
+.fav-list{display:flex;flex-direction:column;gap:9px;max-height:300px;overflow-y:auto;margin:0;padding:0;list-style:none}
+.fav-item{display:flex;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--line);
+  border-radius:13px;padding:11px 12px}
+.fav-item .ft{flex:1;min-width:0;font-size:15px;font-weight:600;line-height:1.4;word-break:break-word}
+.fav-item .fc{display:block;font-size:11.5px;font-weight:400;color:var(--ink2);margin-top:3px}
+.fav-item .fx{flex:0 0 auto;width:30px;height:30px;border-radius:9px;background:#f6f3ee;color:var(--ink2);
+  font-size:15px;line-height:1}
+.fav-item .fx:hover{background:#ffe3d9;color:#c0442a}
+.mini{display:flex;gap:8px;margin-top:12px}
+.mini button{flex:1;min-height:38px;border-radius:11px;background:#fff;border:1.5px solid var(--line);font-size:14px}
+.mini button:hover{border-color:var(--ink)}
+.empty{margin:0;padding:22px 10px;text-align:center;color:var(--ink2);font-size:14px;
+  border:1.5px dashed var(--line);border-radius:14px;background:rgba(255,255,255,.5)}
+.rules{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.rules li{display:flex;gap:9px;font-size:14px;line-height:1.5;color:var(--ink)}
+.rules li .ic{flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:#ffe9df;color:#c0442a;
+  font-size:12px;font-weight:700;display:grid;place-items:center}
+
+/* SECTION: footer */
+.ft{text-align:center;color:var(--ink2);font-size:12.5px;margin-top:30px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- SECTION: header -->
+  <header class="hd">
+    <div>
+      <h1>聊天热梗抽取器<span class="tilde">~</span></h1>
+      <p>想不起词的时候就抽一句，复制走直接用。</p>
+    </div>
+    <div class="count">共 <b id="totalCount">0</b> 条话术 · 收藏 <b id="favCount">0</b></div>
+  </header>
+
+  <!-- SECTION: tabs -->
+  <nav class="tabs" id="tabs" role="tablist" aria-label="话术分类"></nav>
+
+  <div class="grid">
+    <!-- SECTION: card -->
+    <section class="stage">
+      <article class="bubble" id="bubble">
+        <span class="tagline" id="tagline"><span class="em">🎲</span>随机一句</span>
+        <h2 class="say" id="say">点下面这颗骰子</h2>
+        <p class="hint" id="hint">抽到哪句用哪句，聊天的灵感是抽出来的，不是想出来的。</p>
+        <div class="acts">
+          <button class="btn btn-dice" id="btnDice" data-primary-action>🎲 换一句</button>
+          <button class="btn btn-ghost" id="btnCopy" data-primary-action>📋 复制</button>
+          <button class="btn btn-ghost" id="btnFav">⭐ 收藏</button>
+        </div>
+      </article>
+      <p class="kbd">快捷键：<kbd>空格</kbd> 换一句 · <kbd>C</kbd> 复制 · <kbd>S</kbd> 收藏</p>
+    </section>
+
+    <!-- SECTION: side -->
+    <aside class="side">
+      <section class="panel">
+        <h2>我的收藏 <span class="sub" id="favTip"></span></h2>
+        <p class="sub">存在当前浏览器里，下次打开还在。</p>
+        <ul class="fav-list" id="favList"></ul>
+        <p class="empty" id="favEmpty">还没有收藏。遇到顺手的句子点「⭐ 收藏」存下来。</p>
+        <div class="mini" id="favMini" hidden>
+          <button id="btnCopyAll">复制全部</button>
+          <button id="btnClear">清空</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>用之前记住四条</h2>
+        <ul class="rules" id="rules"></ul>
+      </section>
+    </aside>
+  </div>
+
+  <footer class="ft">话术全部来自日常聊天场景整理 · 纯本地单文件，不联网、不收集任何信息。</footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* SECTION: data - 话术数据源 */
+window.MEME_DATA = {
+  categories: [
+    { id: "roast", name: "互怼不伤人", color: "#ff7a59", emoji: "🐷" },
+    { id: "agree", name: "附和噎人", color: "#f2b632", emoji: "🙄" },
+    { id: "praise", name: "阴阳夸人", color: "#3ecf8e", emoji: "👏" },
+    { id: "self", name: "自嘲", color: "#5aa9ff", emoji: "🐮" },
+    { id: "comfort", name: "安慰朋友", color: "#b98cff", emoji: "🫂" },
+    { id: "trend", name: "近两年热梗", color: "#ff5f8d", emoji: "🔥" },
+    { id: "mood", name: "搞怪语气词", color: "#00c2c7", emoji: "~" },
+    { id: "pattern", name: "万能句式", color: "#f5842b", emoji: "🧩" }
+  ],
+  items: [
+    /* 互怼 */
+    { c: "roast", t: "你是猪吧", h: "配贱笑才是玩，配冷脸就成吵" },
+    { c: "roast", t: "你这脑子平时是省电模式吧", h: "对方灵光一下时用" },
+    { c: "roast", t: "就你话多", h: "万能收尾" },
+    { c: "roast", t: "你这饭量，食堂阿姨都记住你了", h: "只调侃吃，别调侃胖" },
+    { c: "roast", t: "你这路痴程度，导航都要罢工", h: "朋友迷路时" },
+    { c: "roast", t: "聪明劲儿全用在点外卖上了", h: "馊主意专用" },
+    { c: "roast", t: "你这波啊，挺勇敢的", h: "说不出口的评价就用它" },
+    { c: "roast", t: "你这操作，属于是给对手送温暖", h: "打游戏时用" },
+    { c: "roast", t: "你这人除了智商不在线，其他都在线", h: "关系够铁再说" },
+    { c: "roast", t: "又菜又爱玩", h: "三个字终结话题" },
+    { c: "roast", t: "缺点全被自信盖住了", h: "对方迷之自信时" },
+    { c: "roast", t: "你这想法吓到我了", h: "先声明你在开玩笑" },
+    { c: "roast", t: "没你能扯", h: "对方长篇大论时" },
+    { c: "roast", t: "睡得挺饱啊今天", h: "对方状态在线时反着说" },
+    { c: "roast", t: "你这嘴是租来的吧，这么着急用", h: "对方抢话时" },
+    { c: "roast", t: "你这发型是睡出来的行为艺术吧", h: "老朋友见面调侃" },
+    /* 附和噎人 */
+    { c: "agree", t: "一点儿都对", h: "本轮灵魂句，万能噎人" },
+    { c: "agree", t: "对，但不多", h: "敷衍式认可" },
+    { c: "agree", t: "有道理，但没有", h: "反差一句话" },
+    { c: "agree", t: "你说的都对，尤其后半句", h: "阴阳但不难听" },
+    { c: "agree", t: "深表赞同，坚决不改", h: "承认错误专用" },
+    { c: "agree", t: "我同意，因为我懒得争", h: "诚实版投降" },
+    { c: "agree", t: "支持，但别找我", h: "甩锅式站队" },
+    { c: "agree", t: "完全正确，但不适用", h: "对方讲大道理时" },
+    { c: "agree", t: "啊对对对", h: "三秒钟结束战斗" },
+    { c: "agree", t: "我错了，但我不改", h: "道歉但不承诺" },
+    { c: "agree", t: "听君一席话，白读十年书", h: "废话文学始祖" },
+    { c: "agree", t: "你说的没错，尤其是我说的部分", h: "抢功用" },
+    { c: "agree", t: "上次这么无语的时候，还是上次", h: "纯废话，效果奇佳" },
+    { c: "agree", t: "我的建议是不建议", h: "被求意见时" },
+    /* 阴阳夸人 */
+    { c: "praise", t: "不愧是你", h: "最短最万能" },
+    { c: "praise", t: "夯爆了", h: "近两年高频夸人词" },
+    { c: "praise", t: "有点东西", h: "克制版服气" },
+    { c: "praise", t: "给你厉害坏了", h: "夸完带点欠" },
+    { c: "praise", t: "看把你能的", h: "同上，更损一点" },
+    { c: "praise", t: "你可真行啊", h: "语气决定是夸还是讽" },
+    { c: "praise", t: "这波属于是超常发挥了", h: "朋友难得成功时" },
+    { c: "praise", t: "你这水平，睡一觉起来更厉害了", h: "夸+催睡两用" },
+    { c: "praise", t: "我见识到自己的厉害了", h: "自夸专用新梗" },
+    { c: "praise", t: "快哉快哉", h: "遇到好事时" },
+    { c: "praise", t: "全公司也就你能办成这事", h: "夸张版认可" },
+    { c: "praise", t: "你别出来了，让我们普通人活", h: "对方凡尔赛时" },
+    { c: "praise", t: "医学奇迹啊兄弟", h: "状态突然好转时" },
+    { c: "praise", t: "你这想法很成熟，成熟得都馊了", h: "先扬后抑" },
+    /* 自嘲 */
+    { c: "self", t: "纯纯牛马", h: "打工人自称天花板" },
+    { c: "self", t: "班味腌入味了", h: "上班上的，别问" },
+    { c: "self", t: "精神离职中", h: "人在心不在" },
+    { c: "self", t: "已老实", h: "被怼完的标准回应" },
+    { c: "self", t: "我菜我有理", h: "打游戏先自贬" },
+    { c: "self", t: "主打一个废物", h: "总结自己的状态" },
+    { c: "self", t: "我又开始瞎说了", h: "说完怪话自己收尾" },
+    { c: "self", t: "我这脑子今天请假了", h: "反应慢时的台阶" },
+    { c: "self", t: "我CPU卡了一下", h: "没听懂时用" },
+    { c: "self", t: "大冤种竟是我自己", h: "被坑后自嘲" },
+    { c: "self", t: "努力了，白费了", h: "诚实但不丧" },
+    { c: "self", t: "我就是嘴上功夫厉害", h: "吹完牛给自己拆台" },
+    { c: "self", t: "我在忙，忙着发呆", h: "被问在干嘛" },
+    { c: "self", t: "我很困，但不是睡觉那种困", h: "心累的表达" },
+    /* 安慰朋友 */
+    { c: "comfort", t: "咋了，谁惹你了", h: "第一句永远问这个" },
+    { c: "comfort", t: "走，吃饭去，天大的事吃完再说", h: "把注意力从问题上移开" },
+    { c: "comfort", t: "别想了，先睡觉", h: "深夜专用" },
+    { c: "comfort", t: "这事儿换我我也崩，你不丢人", h: "先给对方正常化" },
+    { c: "comfort", t: "你上次不也这么过来了嘛", h: "提醒他有战绩" },
+    { c: "comfort", t: "撑不住就骂两句，我听着", h: "给出口，不劝大度" },
+    { c: "comfort", t: "输了怕啥，又不是只打这一场", h: "把时间拉长" },
+    { c: "comfort", t: "帮不上什么忙，但你想说我就听", h: "诚实比建议更有用" },
+    { c: "comfort", t: "今天先这样，剩下的明天再说", h: "帮他按下暂停" },
+    { c: "comfort", t: "累了就说累，不丢人", h: "允许对方示弱" },
+    { c: "comfort", t: "别人怎么想无所谓，我站你", h: "关系够近再用" },
+    { c: "comfort", t: "你已经很努力了，我全看见了", h: "被忽视的人最需要这句" },
+    { c: "comfort", t: "再干下去我可要闹了", h: "劝休息不劝加油" },
+    { c: "comfort", t: "不行就不行呗，不是每件事都得成", h: "消解必须成功的压力" },
+    /* 近两年热梗 */
+    { c: "trend", t: "如何呢，又能怎", h: "2025 年度词，豁达万能" },
+    { c: "trend", t: "蒜鸟蒜鸟", h: "算了算了的谐音" },
+    { c: "trend", t: "别太荒谬", h: "对离谱行为的稳定反应" },
+    { c: "trend", t: "我直接好家伙", h: "惊讶开场" },
+    { c: "trend", t: "咱就是说", h: "接话起手式" },
+    { c: "trend", t: "当个事办", h: "答应帮忙或吐槽敷衍" },
+    { c: "trend", t: "那咋了，受着呗", h: "又刚又摆" },
+    { c: "trend", t: "小崩一下", h: "大词小用，情绪软化" },
+    { c: "trend", t: "活人感", h: "夸真实，也可反讽" },
+    { c: "trend", t: "含机量有点高", h: "吐槽对方说话像 AI" },
+    { c: "trend", t: "你已急哭", h: "对方急了的时候用" },
+    { c: "trend", t: "我是姆巴佩，不睡了", h: "熬夜名场面" },
+    { c: "trend", t: "不要虐待老人", h: "被迫营业时的喊话" },
+    { c: "trend", t: "水灵灵地丢人", h: "把尴尬说得理直气壮" },
+    { c: "trend", t: "不知道，我的身材很曼妙", h: "万能回避答案" },
+    { c: "trend", t: "爱你老己", h: "爱自己的谐音，宠自己" },
+    { c: "trend", t: "低山臭水遇知音", h: "形容我俩臭味相投" },
+    { c: "trend", t: "来财", h: "庆祝、开工、抽奖都合适" },
+    { c: "trend", t: "听劝", h: "建议对方或被建议时" },
+    { c: "trend", t: "邪修", h: "形容路子野的玩法" },
+    /* 语气词 */
+    { c: "mood", t: "哟~", h: "波浪号是灵魂，玩味感来源" },
+    { c: "mood", t: "嘿嘿嘿", h: "三连笑最欠" },
+    { c: "mood", t: "略略略", h: "幼稚但有效" },
+    { c: "mood", t: "哼哼", h: "得意版" },
+    { c: "mood", t: "啧啧啧", h: "评价但不说破" },
+    { c: "mood", t: "嚯", h: "短促惊讶" },
+    { c: "mood", t: "好叭 / 对叭", h: "句尾软化" },
+    { c: "mood", t: "真的捏", h: "强调，带点撒娇" },
+    { c: "mood", t: "好哦惹", h: "认命式收尾" },
+    { c: "mood", t: "冲鸭", h: "打气用" },
+    { c: "mood", t: "啊~？", h: "拖长音，装听不懂" },
+    { c: "mood", t: "哦~", h: "一个字三种人格：哦冷、哦~玩味、哦……惊" },
+    { c: "mood", t: "嘁", h: "不屑" },
+    { c: "mood", t: "嗐", h: "无奈摆手" },
+    { c: "mood", t: "嘶——", h: "倒吸凉气，替人尴尬" },
+    { c: "mood", t: "啊这", h: "接不住话的第一反应" },
+    { c: "mood", t: "我趣", h: "轻度惊讶，不脏" },
+    { c: "mood", t: "叮~", h: "灵光一现或阴阳怪气" },
+    { c: "mood", t: "咻——", h: "跑路的拟声" },
+    { c: "mood", t: "biu biu", h: "开玩笑式攻击" },
+    /* 万能句式 */
+    { c: "pattern", t: "X，但Y", h: "会说话，但下次别说了 / 有进步，但进步得不明显" },
+    { c: "pattern", t: "主打一个X", h: "主打一个松弛 / 真实 / 佛系" },
+    { c: "pattern", t: "一整个X住", h: "一整个大无语住" },
+    { c: "pattern", t: "X基础，X就不基础", h: "反差夸人模板" },
+    { c: "pattern", t: "预制X", h: "预制朋友圈 / 预制人生，吐槽标准化" },
+    { c: "pattern", t: "这波是纯纯X", h: "这波是纯纯拿捏住我了" },
+    { c: "pattern", t: "X界天花板", h: "摆烂界天花板" },
+    { c: "pattern", t: "建议直接X", h: "建议直接封神，别出来卷我们" },
+    { c: "pattern", t: "别问，问就是X", h: "拒绝解释时用" },
+    { c: "pattern", t: "X的是吧？", h: "拆家的是吧？属哈士奇的是吧？" },
+    { c: "pattern", t: "我要是你，我都X", h: "我要是你，我都佩服我自己" },
+    { c: "pattern", t: "从从容容X，匆匆忙忙Y", h: "反差描述一天的状态" }
+  ],
+  /* SECTION: tips - 使用红线 */
+  rules: [
+    "只调侃行为：熬夜、迷路、吃太多、反应慢",
+    "不碰真实在意的点：家人、成绩、身材焦虑、经济状况",
+    "语气和表情比词汇本身更重要",
+    "对方真情绪低落时，立刻关掉怼人模式"
+  ]
+};
+
+</script>
+<script>
+/* SECTION: app */
+(function(){
+  var DATA = window.MEME_DATA || {categories:[],items:[],rules:[]};
+  var CATS = DATA.categories, ITEMS = DATA.items, RULES = DATA.rules || [];
+  var LS_KEY = "meme_favorite_v1";
+  var state = { cat:"all", idx:-1, lastIdx:-1, favs:load() };
+
+  var $ = function(id){ return document.getElementById(id); };
+  var elTabs=$("tabs"), elSay=$("say"), elHint=$("hint"), elTag=$("tagline"),
+      elBubble=$("bubble"), elToast=$("toast"), elFavList=$("favList"),
+      elFavEmpty=$("favEmpty"), elFavMini=$("favMini"), elBtnFav=$("btnFav");
+
+  /* SECTION: storage */
+  function load(){
+    try{ return JSON.parse(localStorage.getItem(LS_KEY)) || []; }catch(e){ return []; }
+  }
+  function save(){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(state.favs)); }catch(e){}
+  }
+
+  /* SECTION: pool */
+  function pool(cat){
+    return cat === "all" ? ITEMS : ITEMS.filter(function(i){ return i.c === cat; });
+  }
+  function catOf(id){
+    for(var i=0;i<CATS.length;i++){ if(CATS[i].id===id) return CATS[i]; }
+    return null;
+  }
+
+  /* SECTION: render tabs */
+  function renderTabs(){
+    var html = '<button class="tab" role="tab" data-cat="all" aria-selected="true">全部 <span class="num">'+ITEMS.length+'</span></button>';
+    CATS.forEach(function(c){
+      var n = pool(c.id).length;
+      html += '<button class="tab" role="tab" data-cat="'+c.id+'" aria-selected="false" style="--tc:'+c.color+'">'
+            + '<span class="dot"></span>'+c.name+' <span class="num">'+n+'</span></button>';
+    });
+    elTabs.innerHTML = html;
+  }
+
+  /* SECTION: draw */
+  function draw(first){
+    var list = pool(state.cat);
+    if(!list.length){ toast("这一类暂时是空的"); return; }
+    var idx;
+    if(list.length === 1){ idx = 0; }
+    else{
+      do{ idx = Math.floor(Math.random()*list.length); }while(idx === state.lastIdx);
+    }
+    state.lastIdx = state.idx = idx;
+    paint(list[idx]);
+    if(!first){
+      elBubble.classList.remove("pop"); void elBubble.offsetWidth; elBubble.classList.add("pop");
+    }
+    syncFavBtn();
+  }
+  function paint(item){
+    var c = catOf(item.c);
+    elSay.textContent = item.t;
+    elHint.textContent = item.h || "顺手就能用，别想太多。";
+    elTag.innerHTML = c
+      ? '<span class="em">'+c.emoji+'</span>'+c.name+' · 第 '+(state.idx+1)+'/'+pool(state.cat).length+' 条'
+      : '随机一句';
+    elBubble.style.setProperty("--accent", c ? c.color : "#ff7a59");
+  }
+
+  /* SECTION: favorite */
+  function findFav(t){
+    for(var i=0;i<state.favs.length;i++){ if(state.favs[i].t===t) return i; }
+    return -1;
+  }
+  function toggleFav(){
+    var list = pool(state.cat);
+    var item = state.idx>=0 ? list[state.idx] : null;
+    if(!item){ toast("先抽一句再收藏"); return; }
+    var at = findFav(item.t);
+    if(at >= 0){ state.favs.splice(at,1); toast("已取消收藏"); }
+    else{ state.favs.unshift(item); toast("收藏好了，"+item.t); }
+    save(); renderFavs(); syncFavBtn();
+  }
+  function syncFavBtn(){
+    var list = pool(state.cat);
+    var item = state.idx>=0 ? list[state.idx] : null;
+    var on = !!(item && findFav(item.t) >= 0);
+    elBtnFav.classList.toggle("on", on);
+    elBtnFav.textContent = on ? "✅ 已收藏" : "⭐ 收藏";
+  }
+  function renderFavs(){
+    $("favCount").textContent = state.favs.length;
+    $("favTip").textContent = state.favs.length ? state.favs.length+" 条" : "";
+    elFavMini.hidden = state.favs.length === 0;
+    elFavEmpty.hidden = state.favs.length > 0;
+    elFavList.innerHTML = state.favs.map(function(f,i){
+      var c = catOf(f.c);
+      return '<li class="fav-item"><div class="ft">'+esc(f.t)
+           + '<span class="fc">'+(c?c.name:"")+(f.h?" · "+esc(f.h):"")+'</span></div>'
+           + '<button class="fx" data-i="'+i+'" aria-label="删除这条收藏">×</button></li>';
+    }).join("");
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(m){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]; }); }
+
+  /* SECTION: copy */
+  function copyText(txt, okMsg){
+    var done = function(){ toast(okMsg); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, function(){ legacy(txt, done); });
+    }else{ legacy(txt, done); }
+  }
+  function legacy(txt, done){
+    var ta = document.createElement("textarea");
+    ta.value = txt; ta.setAttribute("readonly","");
+    ta.style.cssText = "position:fixed;left:-9999px;top:0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); done(); }
+    catch(e){ toast("复制没成功，长按选中文字手动复制"); }
+    document.body.removeChild(ta);
+  }
+  function copyCurrent(){
+    var list = pool(state.cat);
+    var item = state.idx>=0 ? list[state.idx] : null;
+    if(!item){ toast("先抽一句"); return; }
+    copyText(item.t, "已复制：" + item.t);
+  }
+
+  /* SECTION: toast */
+  var tt;
+  function toast(msg){
+    elToast.textContent = msg; elToast.classList.add("show");
+    clearTimeout(tt); tt = setTimeout(function(){ elToast.classList.remove("show"); }, 1900);
+  }
+
+  /* SECTION: events */
+  elTabs.addEventListener("click", function(e){
+    var b = e.target.closest(".tab"); if(!b) return;
+    state.cat = b.dataset.cat; state.idx = -1; state.lastIdx = -1;
+    Array.prototype.forEach.call(elTabs.children, function(t){
+      t.setAttribute("aria-selected", String(t === b));
+    });
+    draw(false);
+  });
+  $("btnDice").addEventListener("click", function(){ draw(false); });
+  $("btnCopy").addEventListener("click", copyCurrent);
+  elBtnFav.addEventListener("click", toggleFav);
+  elFavList.addEventListener("click", function(e){
+    var b = e.target.closest(".fx"); if(!b) return;
+    state.favs.splice(+b.dataset.i, 1); save(); renderFavs(); syncFavBtn(); toast("删掉了");
+  });
+  $("btnCopyAll").addEventListener("click", function(){
+    copyText(state.favs.map(function(f){ return f.t; }).join("\n"),
+             "已复制全部 "+state.favs.length+" 条");
+  });
+  $("btnClear").addEventListener("click", function(){
+    if(!state.favs.length) return;
+    state.favs = []; save(); renderFavs(); syncFavBtn(); toast("收藏清空了");
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.target.matches("input,textarea")) return;
+    var k = e.key.toLowerCase();
+    if(e.key === " " || k === "arrowright"){ e.preventDefault(); draw(false); }
+    else if(k === "c"){ copyCurrent(); }
+    else if(k === "s"){ toggleFav(); }
+  });
+
+  /* SECTION: init */
+  $("totalCount").textContent = ITEMS.length;
+  $("rules").innerHTML = RULES.map(function(r,i){
+    return '<li><span class="ic">'+(i+1)+'</span><span>'+esc(r)+'</span></li>';
+  }).join("");
+  renderTabs(); renderFavs(); draw(true);
+})();
+</script>
+</body>
+</html>
